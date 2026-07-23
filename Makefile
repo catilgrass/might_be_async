@@ -1,7 +1,7 @@
-.PHONY: check clippy check-lock test-crate test-sync test-async expand fmt-expand lock doc
+.PHONY: check clippy check-lock test-crate test-sync test-async test-no-metadata expand fmt-expand lock doc
 
 # make check
-check: clippy expand fmt-expand test-crate test-sync test-async check-lock
+check: clippy expand fmt-expand test-crate test-sync test-async test-no-metadata check-lock
 
 # make doc
 doc:
@@ -26,6 +26,9 @@ test-sync:
 
 test-async:
 	cargo test -p might_be_async_test_async --features metadata_async --manifest-path test/Cargo.toml
+
+test-no-metadata:
+	cargo test -p might_be_async_test_fallback --features async --manifest-path test/Cargo.toml
 
 expand:
 	python3 scripts/expand_codes.py

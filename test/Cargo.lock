@@ -137,6 +137,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "might_be_async_test_fallback"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "might_be_async",
+]
+
+[[package]]
 name = "might_be_async_test_sync"
 version = "0.1.0"
 dependencies = [
