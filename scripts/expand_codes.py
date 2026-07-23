@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 TEMP = ROOT / ".temp"
 USAGE = ROOT / "doc" / "usage"
 
-EXPAND_BEGIN = "const EXPAND_BEGIN: () = ();"
+EXPAND_BEGIN = "use might_be_async::*;\nconst EXPAND_BEGIN: () = ();"
 EXPAND_END = "const EXPAND_END: () = ();"
 
 
