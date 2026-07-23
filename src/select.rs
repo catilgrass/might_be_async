@@ -210,15 +210,12 @@ fn has_not_prefix(s: &str) -> bool {
 fn token_stream_has_await(ts: &TokenStream2) -> bool {
     let mut tokens = ts.clone().into_iter();
     while let Some(token) = tokens.next() {
-        if let TokenTree::Punct(p) = &token {
-            if p.as_char() == '.' && p.spacing() == Spacing::Alone {
-                if let Some(TokenTree::Ident(ident)) = tokens.next() {
-                    if ident == "await" {
+        if let TokenTree::Punct(p) = &token
+            && p.as_char() == '.' && p.spacing() == Spacing::Alone
+                && let Some(TokenTree::Ident(ident)) = tokens.next()
+                    && ident == "await" {
                         return true;
                     }
-                }
-            }
-        }
     }
     false
 }
@@ -241,17 +238,13 @@ fn token_stream_has_await(ts: &TokenStream2) -> bool {
 fn strip_await_from_tokens(ts: &TokenStream2) -> TokenStream2 {
     let tokens: Vec<_> = ts.clone().into_iter().collect();
     let len = tokens.len();
-    if len >= 2 {
-        if let TokenTree::Punct(p) = &tokens[len - 2] {
-            if p.as_char() == '.' {
-                if let TokenTree::Ident(ident) = &tokens[len - 1] {
-                    if ident == "await" {
+    if len >= 2
+        && let TokenTree::Punct(p) = &tokens[len - 2]
+            && p.as_char() == '.'
+                && let TokenTree::Ident(ident) = &tokens[len - 1]
+                    && ident == "await" {
                         return tokens[..len - 2].iter().cloned().collect();
                     }
-                }
-            }
-        }
-    }
     ts.clone()
 }
 

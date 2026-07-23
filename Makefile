@@ -11,6 +11,9 @@ lock:
 
 # DO NOT RUN THEM
 
+clippy:
+	cargo clippy -- -D warnings
+
 test-crate:
 	cargo test
 
@@ -29,6 +32,19 @@ fmt-expand:
 	done
 
 check-lock:
-	for f in doc/usage/*_expand.rs; do \
-	    git --no-pager diff "$$f.lock" "$$f" || (echo "ERROR: $$f differs from $$f.lock"; exit 1); \
-	done
+	@errors=0; \
+	for lock in doc/usage/*_expand.rs.lock; do \
+		[ -f "$$lock" ] || continue; \
+		base="$${lock%.lock}"; \
+		if [ ! -f "$$base" ]; then \
+			echo "ERROR: $$lock has no matching source file"; \
+			errors=1; \
+		elif git --no-pager diff --quiet "$$lock" "$$base" 2>/dev/null; then \
+			:; \
+		else \
+			git --no-pager diff "$$lock" "$$base" || true; \
+			echo "ERROR: $$base differs from $$lock"; \
+			errors=1; \
+		fi; \
+	done; \
+	exit $$errors
