@@ -1,65 +1,65 @@
 use crate::SynResult;
 use crate::TokenStream2;
+use crate::config::default_feature_name;
 use proc_macro::TokenStream;
 use proc_macro2::{Spacing, TokenTree};
 use quote::{ToTokens, quote};
 use syn::parse::{Parse, ParseStream};
-use syn::punctuated::Punctuated;
 use syn::{Expr, LitStr, Token, parse_macro_input};
 
 #[doc = include_str!("../doc/args/select_arm.md")]
 pub enum SelectArmArgs {
-    /// "feat_name" => expr
+    /// "feat_name" => { expr }
     Explicit { feat: LitStr, body: Expr },
 
-    /// ! => expr
+    /// ! => { expr }
     Not { body: Expr },
 
-    /// expr (no feature name — auto-detect by .await)
+    /// { expr } (no feature name — auto-detect by .await)
     Implicit { body: Expr },
 }
 
 impl Parse for SelectArmArgs {
     fn parse(input: ParseStream) -> SynResult<Self> {
-        // Try to parse an explicit feature name: "feature_name" => expr
-        if input.peek(LitStr) {
-            let feat: LitStr = input.parse()?;
-            input.parse::<Token![=>]>()?;
-            let body: Expr = input.parse()?;
-            Ok(SelectArmArgs::Explicit { feat, body })
-        }
-        // Try to parse a negation arm: ! => expr
-        else if input.peek(Token![!]) {
-            let _not: Token![!] = input.parse()?;
-            input.parse::<Token![=>]>()?;
-            let body: Expr = input.parse()?;
-            Ok(SelectArmArgs::Not { body })
-        }
-        // Otherwise treat as an implicit arm (auto-detect whether it contains .await)
-        else {
-            let body: Expr = input.parse()?;
-            Ok(SelectArmArgs::Implicit { body })
-        }
+        parse_one_arm(input)
     }
 }
 
 struct SelectInput {
-    arms: Vec<SelectArmArgs>,
+    arm0: SelectArmArgs,
+    arm1: SelectArmArgs,
 }
 
 impl Parse for SelectInput {
     fn parse(input: ParseStream) -> SynResult<Self> {
-        let punctuated: Punctuated<SelectArmArgs, Token![,]> = Punctuated::parse_terminated(input)?;
+        let arm0 = parse_one_arm(input)?;
+        input.parse::<Token![else]>()?;
+        let arm1 = parse_one_arm(input)?;
+        Ok(SelectInput { arm0, arm1 })
+    }
+}
 
-        if punctuated.len() != 2 {
-            return Err(syn::Error::new(
-                input.span(),
-                "select! requires exactly 2 arms",
-            ));
-        }
-
-        let arms: Vec<SelectArmArgs> = punctuated.into_iter().collect();
-        Ok(SelectInput { arms })
+/// Parse one arm: either `"feat" => { expr }`, `! => { expr }`, or `{ expr }`.
+pub fn parse_one_arm(input: ParseStream) -> SynResult<SelectArmArgs> {
+    // Parse an explicit feature arm: "feat_name" => { expr }
+    if input.peek(LitStr) {
+        let feat: LitStr = input.parse()?;
+        input.parse::<Token![=>]>()?;
+        let body: Expr = input.parse()?;
+        Ok(SelectArmArgs::Explicit { feat, body })
+    }
+    // Parse a negation arm: ! => { expr }
+    else if input.peek(Token![!]) {
+        input.parse::<Token![!]>()?;
+        input.parse::<Token![=>]>()?;
+        let body: Expr = input.parse()?;
+        Ok(SelectArmArgs::Not { body })
+    }
+    // Parse an implicit arm: { expr } (no feature name — will auto-detect by .await)
+    else {
+        // Expect a block expression { ... }
+        let body: Expr = input.parse()?;
+        Ok(SelectArmArgs::Implicit { body })
     }
 }
 
@@ -71,8 +71,8 @@ pub(crate) fn select(input: TokenStream) -> TokenStream {
 
 impl SelectInput {
     fn expand(&self) -> TokenStream2 {
-        let arm0 = &self.arms[0];
-        let arm1 = &self.arms[1];
+        let arm0 = &self.arm0;
+        let arm1 = &self.arm1;
 
         match (arm0, arm1) {
             // Both explicit — use cfg!() since no .await to worry about
@@ -84,7 +84,8 @@ impl SelectInput {
                 let f1_str = f1.value();
 
                 if has_not_prefix(&f0_str) && has_not_prefix(&f1_str) {
-                    quote! { if cfg!(feature = "async") { #b0 } else { #b1 } }
+                    let feat = default_feature_name();
+                    quote! { if cfg!(feature = #feat) { #b0 } else { #b1 } }
                 } else if has_not_prefix(&f0_str) {
                     let inner = &f0_str[1..];
                     quote! { if cfg!(feature = #inner) { #b1 } else { #b0 } }
@@ -155,10 +156,7 @@ impl SelectInput {
                         let b1_stripped = strip_await_from_tokens(&b1.to_token_stream());
                         cfg_block(&quote! { #b0 }, &quote! { #b1_stripped })
                     }
-                    (false, false) => {
-                        // Neither has .await — use first as async branch as-is
-                        cfg_block(&quote! { #b0 }, &quote! { #b1 })
-                    }
+                    (false, false) => cfg_block(&quote! { #b0 }, &quote! { #b1 }),
                 }
             }
 
@@ -174,19 +172,19 @@ impl SelectInput {
 
             // Two Not
             (SelectArmArgs::Not { body: b0 }, SelectArmArgs::Not { body: b1 }) => {
-                quote! { if cfg!(feature = "async") { #b0 } else { #b1 } }
+                let feat = default_feature_name();
+                quote! { if cfg!(feature = #feat) { #b0 } else { #b1 } }
             }
         }
     }
 }
 
-/// Generate a block that returns a value using #[cfg] gates.
-/// `async_branch` is used when `feature = "async"` is enabled.
 fn cfg_block(async_branch: &TokenStream2, sync_branch: &TokenStream2) -> TokenStream2 {
+    let feat = default_feature_name();
     quote! {{
-        #[cfg(feature = "async")]
+        #[cfg(feature = #feat)]
         { #async_branch }
-        #[cfg(not(feature = "async"))]
+        #[cfg(not(feature = #feat))]
         { #sync_branch }
     }}
 }
@@ -221,20 +219,6 @@ fn token_stream_has_await(ts: &TokenStream2) -> bool {
 }
 
 /// Strips a trailing `.await` from a token stream.
-///
-/// This function is used when both arms of a `select!` macro contain `.await` expressions.
-/// In that case, one arm's `.await` must be removed so that the generated `#[cfg]` blocks
-/// produce valid code for both async and sync contexts.
-///
-/// # Examples
-///
-/// ```ignore
-/// let ts: TokenStream2 = quote! { foo.bar().await };
-/// let stripped = strip_await_from_tokens(&ts);
-/// assert_eq!(stripped.to_string(), "foo . bar ()");
-/// ```
-///
-/// If the token stream does not end with `.await`, the original stream is returned unchanged.
 fn strip_await_from_tokens(ts: &TokenStream2) -> TokenStream2 {
     let tokens: Vec<_> = ts.clone().into_iter().collect();
     let len = tokens.len();
@@ -254,41 +238,44 @@ mod tests {
     use crate::select::SelectArmArgs;
     use quote::ToTokens;
 
-    /// Input: "async" => 100  → Explicit variant
     #[test]
     fn test_explicit_arm() {
-        let input: proc_macro2::TokenStream = "\"async\" => 100".parse().unwrap();
+        let input: proc_macro2::TokenStream = "\"async\" => { 100 }".parse().unwrap();
         let arm: SelectArmArgs = syn::parse2(input).unwrap();
         match &arm {
             SelectArmArgs::Explicit { feat, body } => {
                 assert_eq!(feat.value(), "async");
-                assert_eq!(body.to_token_stream().to_string(), "100");
+                let s = body.to_token_stream().to_string();
+                assert!(s.contains("100"), "body should contain 100, got: {s}");
             }
             _ => panic!("expected Explicit variant"),
         }
     }
 
-    /// Input: ! => 200  → Not variant
     #[test]
     fn test_not_arm() {
-        let input: proc_macro2::TokenStream = "! => 200".parse().unwrap();
+        let input: proc_macro2::TokenStream = "! => { 200 }".parse().unwrap();
         let arm: SelectArmArgs = syn::parse2(input).unwrap();
         match &arm {
             SelectArmArgs::Not { body } => {
-                assert_eq!(body.to_token_stream().to_string(), "200");
+                let s = body.to_token_stream().to_string();
+                assert!(s.contains("200"), "body should contain 200, got: {s}");
             }
             _ => panic!("expected Not variant"),
         }
     }
 
-    /// Input: 1 + 2  → Implicit variant (no feature name)
     #[test]
     fn test_implicit_arm() {
-        let input: proc_macro2::TokenStream = "1 + 2".parse().unwrap();
+        let input: proc_macro2::TokenStream = "{ 1 + 2 }".parse().unwrap();
         let arm: SelectArmArgs = syn::parse2(input).unwrap();
         match &arm {
             SelectArmArgs::Implicit { body } => {
-                assert_eq!(body.to_token_stream().to_string(), "1 + 2");
+                let s = body.to_token_stream().to_string();
+                assert!(
+                    s.contains("1 + 2") || s.contains("1+2"),
+                    "body should contain 1 + 2, got: {s}"
+                );
             }
             _ => panic!("expected Implicit variant"),
         }

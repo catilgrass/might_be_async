@@ -1,5 +1,6 @@
 use crate::SynResult;
 use crate::TokenStream2;
+use crate::config::default_feature_name;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
@@ -36,10 +37,11 @@ pub(crate) fn invoke(input: TokenStream) -> TokenStream {
 
     let expanded = match input {
         InvokeArgs::Default(expr) => {
+            let feat = default_feature_name();
             quote! {{
-                #[cfg(feature = "async")]
+                #[cfg(feature = #feat)]
                 { #expr.await }
-                #[cfg(not(feature = "async"))]
+                #[cfg(not(feature = #feat))]
                 { #expr }
             }}
         }
@@ -85,4 +87,3 @@ mod tests {
         }
     }
 }
-

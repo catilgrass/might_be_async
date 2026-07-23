@@ -3,6 +3,7 @@
 
 use proc_macro::TokenStream;
 
+pub(crate) mod config;
 pub(crate) mod func;
 pub(crate) mod invoke;
 pub(crate) mod select;

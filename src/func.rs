@@ -1,4 +1,5 @@
 use crate::SynResult;
+use crate::config::default_feature_name;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
@@ -15,7 +16,7 @@ pub struct FuncArgs {
 impl Default for FuncArgs {
     fn default() -> Self {
         FuncArgs {
-            feature_name: "async".to_string(),
+            feature_name: default_feature_name().to_string(),
         }
     }
 }
