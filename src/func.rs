@@ -78,4 +78,16 @@ mod tests {
         let args: FuncArgs = syn::parse2(input).unwrap();
         assert_eq!(args.feature_name, "custom_name");
     }
+
+    #[test]
+    fn integer_literal_is_rejected() {
+        let input: proc_macro2::TokenStream = "42".parse().unwrap();
+        assert!(syn::parse2::<FuncArgs>(input).is_err());
+    }
+
+    #[test]
+    fn multiple_args_are_rejected() {
+        let input: proc_macro2::TokenStream = r#""a" "b""#.parse().unwrap();
+        assert!(syn::parse2::<FuncArgs>(input).is_err());
+    }
 }

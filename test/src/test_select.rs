@@ -90,3 +90,28 @@ fn test_select_metadata_two_not() {
     let r = might_be_async::select! { ! => { 70 } else ! => { 80 } };
     assert_eq!(r, 80);
 }
+
+#[might_be_async::func]
+fn pick(toggle: bool) -> &'static str {
+    might_be_async::select! { "metadata_async" => {
+        if toggle { "async_on_a" } else { "async_on_b" }
+    } else ! => {
+        if toggle { "sync_a" } else { "sync_b" }
+    }}
+}
+
+#[cfg(not(feature = "metadata_async"))]
+#[test]
+fn test_select_inside_func_sync() {
+    assert_eq!(pick(true), "sync_a");
+    assert_eq!(pick(false), "sync_b");
+}
+
+#[cfg(feature = "metadata_async")]
+#[test]
+fn test_select_inside_func_async() {
+    let r = futures::executor::block_on(async { pick(true).await });
+    assert_eq!(r, "async_on_a");
+    let r = futures::executor::block_on(async { pick(false).await });
+    assert_eq!(r, "async_on_b");
+}

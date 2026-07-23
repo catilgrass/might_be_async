@@ -86,4 +86,21 @@ mod tests {
             _ => panic!("expected Explicit variant"),
         }
     }
+
+    #[test]
+    fn explicit_missing_arrow_is_rejected() {
+        let input: proc_macro2::TokenStream = r#""ft" expr()"#.parse().unwrap();
+        assert!(syn::parse2::<InvokeArgs>(input).is_err());
+    }
+
+    #[test]
+    fn integer_parses_as_default_variant() {
+        // integer literal is not a LitStr, so it falls through to Default variant
+        let input: proc_macro2::TokenStream = "42".parse().unwrap();
+        let args: InvokeArgs = syn::parse2(input).unwrap();
+        match args {
+            InvokeArgs::Default(_) => {} // expected
+            _ => panic!("expected Default variant"),
+        }
+    }
 }
