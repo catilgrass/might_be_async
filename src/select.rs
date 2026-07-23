@@ -72,7 +72,7 @@ impl SelectInput {
         let arm1 = &self.arms[1];
 
         match (arm0, arm1) {
-            // Both explicit with feature names
+            // Both explicit — use cfg!() since no .await to worry about
             (
                 SelectArm::Explicit { feat: f0, body: b0 },
                 SelectArm::Explicit { feat: f1, body: b1 },
@@ -80,185 +80,103 @@ impl SelectInput {
                 let f0_str = f0.value();
                 let f1_str = f1.value();
 
-                if has_not_prefix(&f0_str) {
+                if has_not_prefix(&f0_str) && has_not_prefix(&f1_str) {
+                    quote! { if cfg!(feature = "async") { #b0 } else { #b1 } }
+                } else if has_not_prefix(&f0_str) {
                     let inner = &f0_str[1..];
-                    quote! {{
-                        #[cfg(not(feature = #inner))]
-                        { #b0 }
-                        #[cfg(feature = #inner)]
-                        { #b1 }
-                    }}
+                    quote! { if cfg!(feature = #inner) { #b1 } else { #b0 } }
                 } else if has_not_prefix(&f1_str) {
-                    let _inner = &f1_str[1..];
-                    quote! {{
-                        #[cfg(feature = #f0)]
-                        { #b0 }
-                        #[cfg(not(feature = #f0))]
-                        { #b1 }
-                    }}
+                    quote! { if cfg!(feature = #f0_str) { #b0 } else { #b1 } }
                 } else {
-                    quote! {{
-                        #[cfg(feature = #f0)]
-                        { #b0 }
-                        #[cfg(feature = #f1)]
-                        { #b1 }
-                    }}
+                    quote! { if cfg!(feature = #f0_str) { #b0 } else { #b1 } }
                 }
             }
 
-            // Explicit + Not
+            // Explicit + Not — cfg!() safe (no .await)
             (SelectArm::Explicit { feat, body }, SelectArm::Not { body: not_body }) => {
                 let feat_str = feat.value();
                 if has_not_prefix(&feat_str) {
                     let inner = &feat_str[1..];
-                    quote! {{
-                        #[cfg(not(feature = #inner))]
-                        { #body }
-                        #[cfg(feature = #inner)]
-                        { #not_body }
-                    }}
+                    quote! { if cfg!(feature = #inner) { #not_body } else { #body } }
                 } else {
-                    quote! {{
-                        #[cfg(feature = #feat_str)]
-                        { #body }
-                        #[cfg(not(feature = #feat_str))]
-                        { #not_body }
-                    }}
+                    quote! { if cfg!(feature = #feat_str) { #body } else { #not_body } }
                 }
             }
             (SelectArm::Not { body: not_body }, SelectArm::Explicit { feat, body }) => {
                 let feat_str = feat.value();
                 if has_not_prefix(&feat_str) {
                     let inner = &feat_str[1..];
-                    quote! {{
-                        #[cfg(feature = #inner)]
-                        { #body }
-                        #[cfg(not(feature = #inner))]
-                        { #not_body }
-                    }}
+                    quote! { if cfg!(feature = #inner) { #body } else { #not_body } }
                 } else {
-                    quote! {{
-                        #[cfg(not(feature = #feat_str))]
-                        { #not_body }
-                        #[cfg(feature = #feat_str)]
-                        { #body }
-                    }}
+                    quote! { if cfg!(feature = #feat_str) { #body } else { #not_body } }
                 }
             }
 
-            // Explicit + Implicit
+            // Explicit + Implicit — cfg!() safe (arms have no .await from this context)
             (SelectArm::Explicit { feat, body }, SelectArm::Implicit { body: imp_body }) => {
                 let feat_str = feat.value();
                 if has_not_prefix(&feat_str) {
                     let inner = &feat_str[1..];
-                    quote! {{
-                        #[cfg(not(feature = #inner))]
-                        { #body }
-                        #[cfg(feature = #inner)]
-                        { #imp_body }
-                    }}
+                    quote! { if cfg!(feature = #inner) { #imp_body } else { #body } }
                 } else {
-                    quote! {{
-                        #[cfg(feature = #feat_str)]
-                        { #body }
-                        #[cfg(not(feature = #feat_str))]
-                        { #imp_body }
-                    }}
+                    quote! { if cfg!(feature = #feat_str) { #body } else { #imp_body } }
                 }
             }
             (SelectArm::Implicit { body: imp_body }, SelectArm::Explicit { feat, body }) => {
                 let feat_str = feat.value();
                 if has_not_prefix(&feat_str) {
                     let inner = &feat_str[1..];
-                    quote! {{
-                        #[cfg(feature = #inner)]
-                        { #body }
-                        #[cfg(not(feature = #inner))]
-                        { #imp_body }
-                    }}
+                    quote! { if cfg!(feature = #inner) { #body } else { #imp_body } }
                 } else {
-                    quote! {{
-                        #[cfg(not(feature = #feat_str))]
-                        { #imp_body }
-                        #[cfg(feature = #feat_str)]
-                        { #body }
-                    }}
+                    quote! { if cfg!(feature = #feat_str) { #body } else { #imp_body } }
                 }
             }
 
-            // Both implicit — auto-detect .await
+            // Both implicit — use #[cfg] blocks to handle .await correctly
             (SelectArm::Implicit { body: b0 }, SelectArm::Implicit { body: b1 }) => {
-                let b0_has_await = token_stream_has_await(&b0.into_token_stream());
-                let b1_has_await = token_stream_has_await(&b1.into_token_stream());
+                let b0_has_await = token_stream_has_await(&b0.to_token_stream());
+                let b1_has_await = token_stream_has_await(&b1.to_token_stream());
 
                 match (b0_has_await, b1_has_await) {
-                    (true, false) => {
-                        quote! {{
-                            #[cfg(feature = "async")]
-                            { #b0 }
-                            #[cfg(not(feature = "async"))]
-                            { #b1 }
-                        }}
-                    }
-                    (false, true) => {
-                        quote! {{
-                            #[cfg(feature = "async")]
-                            { #b1 }
-                            #[cfg(not(feature = "async"))]
-                            { #b0 }
-                        }}
-                    }
+                    (true, false) => cfg_block(&quote! { #b0 }, &quote! { #b1 }),
+                    (false, true) => cfg_block(&quote! { #b1 }, &quote! { #b0 }),
                     (true, true) => {
-                        // Both have .await — use second as sync (strip .await)
-                        let b1_stripped = strip_await_from_tokens(&b1.into_token_stream());
-                        quote! {{
-                            #[cfg(feature = "async")]
-                            { #b0 }
-                            #[cfg(not(feature = "async"))]
-                            { #b1_stripped }
-                        }}
+                        let b1_stripped = strip_await_from_tokens(&b1.to_token_stream());
+                        cfg_block(&quote! { #b0 }, &quote! { #b1_stripped })
                     }
                     (false, false) => {
-                        // Neither has .await — use second as async (add .await)
-                        quote! {{
-                            #[cfg(feature = "async")]
-                            { #b0 .await }
-                            #[cfg(not(feature = "async"))]
-                            { #b1 }
-                        }}
+                        // Neither has .await — add .await to async branch
+                        let async_branch = quote! { #b0 .await };
+                        cfg_block(&async_branch, &quote! { #b1 })
                     }
                 }
             }
 
             // Not + Implicit
             (SelectArm::Not { body: not_body }, SelectArm::Implicit { body: imp_body }) => {
-                quote! {{
-                    #[cfg(feature = "async")]
-                    { #not_body }
-                    #[cfg(not(feature = "async"))]
-                    { #imp_body }
-                }}
+                cfg_block(&quote! { #not_body }, &quote! { #imp_body })
             }
             (SelectArm::Implicit { body: imp_body }, SelectArm::Not { body: not_body }) => {
-                quote! {{
-                    #[cfg(not(feature = "async"))]
-                    { #imp_body }
-                    #[cfg(feature = "async")]
-                    { #not_body }
-                }}
+                cfg_block(&quote! { #not_body }, &quote! { #imp_body })
             }
 
-            // Two Not arms — doesn't make sense, fallback
+            // Two Not
             (SelectArm::Not { body: b0 }, SelectArm::Not { body: b1 }) => {
-                quote! {{
-                    #[cfg(feature = "async")]
-                    { #b0 }
-                    #[cfg(not(feature = "async"))]
-                    { #b1 }
-                }}
+                quote! { if cfg!(feature = "async") { #b0 } else { #b1 } }
             }
         }
     }
+}
+
+/// Generate a block that returns a value using #[cfg] gates.
+/// `async_branch` is used when `feature = "async"` is enabled.
+fn cfg_block(async_branch: &TokenStream2, sync_branch: &TokenStream2) -> TokenStream2 {
+    quote! {{
+        #[cfg(feature = "async")]
+        { #async_branch }
+        #[cfg(not(feature = "async"))]
+        { #sync_branch }
+    }}
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────────────────
