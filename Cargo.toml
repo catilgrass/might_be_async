@@ -8,6 +8,12 @@ repository = "https://github.com/catilgrass/might_be_async"
 [lib]
 proc-macro = true
 
+[features]
+
+# Only a test placeholder, no actual functionality
+foo_async = []
+foo_sync = []
+
 [dependencies]
 proc-macro2 = "1.0.106"
 quote = "1.0.46"

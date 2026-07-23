@@ -12,14 +12,13 @@ Generates both synchronous and asynchronous versions of a function, gated by a C
 Accepts an optional string argument specifying the feature name (defaults to `"async"`).
 
 ```rust
-# use might_be_async::func;
 // Uses default feature name "async"
-#[func]
-fn compute(x: i32) -> i32 { ... }
+#[might_be_async::func]
+fn compute(x: i32) -> i32 { x }
 
 // Custom feature name
-#[func("tokio")]
-fn fetch(url: &str) -> String { ... }
+#[might_be_async::func("foo_async")]
+fn fetch(url: &str) -> String { "url".into() }
 ```
 
 ### `invoke!` — Proc macro
@@ -29,12 +28,18 @@ Wraps a function call, automatically adding `.await` when the feature is enabled
 Accepts an optional feature name before `=>` (defaults to `"async"`).
 
 ```rust
-# use might_be_async::invoke;
+use might_be_async::invoke;
+# #[might_be_async::func]
+# fn entry() {
+
 // Uses default feature name "async"
-invoke!(do_stuff(args))
+invoke!(do_stuff(args));
 
 // Custom feature name
-invoke!("tokio" => fetch_data(url))
+invoke!("foo_async" => fetch_data(url));
+# }
+# #[might_be_async::func]
+# fn fetch_data(url: String) {}
 ```
 
 ### `select!` — Proc macro
@@ -44,16 +49,20 @@ Chooses between two expressions at compile time based on whether the feature fla
 Supports three arm syntaxes:
 
 ```rust
-# use might_be_async::select;
+use might_be_async::select;
+# #[might_be_async::func]
+# fn entry() {
+
 // Explicit feature name arm and a negation arm
-select!("async" => { async_expr().await } else ! => { sync_expr() });
+select!("foo_async" => { async_expr().await } else ! => { sync_expr() });
 
 // Two explicit feature names (second can use ! prefix)
-select!("sync" => { expr_a() } else "async" => { expr_b().await });
+select!("foo_sync" => { expr_a() } else "foo_async" => { expr_b().await });
 
 // Implicit arms — auto-detects .await to decide async vs sync
 select!({ expr_with_await().await } else { expr_without_await() });
 
+# }
 # async fn expr_with_await () {}
 # fn expr_without_await () {}
 # async fn async_expr () {}
@@ -90,7 +99,7 @@ fn add_then_double(a: i32, b: i32) -> i32 {
 #[func]
 fn pick(flag: bool) -> i32 {
     if flag {
-        select!("async" => 100 else ! => 200)
+        select!("foo_async" => 100 else ! => 200)
     } else {
         0
     }
