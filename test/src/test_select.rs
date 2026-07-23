@@ -1,14 +1,14 @@
 #[cfg(not(feature = "metadata_async"))]
 #[test]
 fn test_select_explicit() {
-    let r = might_be_async::select! { "metadata_async" => { 1 } else "sync" => { 2 } };
+    let r = might_be_async::select! { "metadata_async" => { 1 } else ! => { 2 } };
     assert_eq!(r, 2);
 }
 
 #[cfg(feature = "metadata_async")]
 #[test]
 fn test_select_explicit() {
-    let r = might_be_async::select! { "metadata_async" => { 1 } else "sync" => { 2 } };
+    let r = might_be_async::select! { "metadata_async" => { 1 } else ! => { 2 } };
     assert_eq!(r, 1);
 }
 
@@ -38,6 +38,13 @@ fn test_select_not_first() {
 fn test_select_not_first() {
     let r = might_be_async::select! { ! => { 30 } else "metadata_async" => { 40 } };
     assert_eq!(r, 40);
+}
+
+#[cfg(feature = "metadata_async")]
+#[test]
+fn test_select_both_explicit() {
+    let r = might_be_async::select! { "metadata_async" => { 100 } else "custom_ft" => { 200 } };
+    assert_eq!(r, 100);
 }
 
 #[cfg(not(feature = "metadata_async"))]
