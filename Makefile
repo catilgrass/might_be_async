@@ -1,6 +1,15 @@
-.PHONY: check test-crate test-sync test-async expand fmt-expand
+.PHONY: check test-crate test-sync test-async expand fmt-expand lock check-lock
 
-check: expand fmt-expand test-crate test-sync test-async
+# make check
+check: expand fmt-expand test-crate test-sync test-async check-lock
+
+# make lock
+lock:
+	for f in doc/usage/*_expand.rs; do \
+		cp "$$f" "$$f.lock"; \
+	done
+
+# DO NOT RUN THEM
 
 test-crate:
 	cargo test
@@ -15,4 +24,11 @@ expand:
 	python3 scripts/expand_codes.py
 
 fmt-expand:
-	rustfmt doc/usage/* --edition 2024 --config blank_lines_lower_bound=0
+	for f in doc/usage/*_expand.rs; do \
+		case "$$f" in *.lock) ;; *) rustfmt "$$f" --edition 2024 --config blank_lines_lower_bound=0 ;; esac; \
+	done
+
+check-lock:
+	for f in doc/usage/*_expand.rs; do \
+	    cmp "$$f" "$$f.lock" || (echo "ERROR: $$f differs from $$f.lock"; exit 1); \
+	done
