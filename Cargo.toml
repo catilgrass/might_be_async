@@ -9,7 +9,6 @@ repository = "https://github.com/catilgrass/might_be_async"
 description = "A proc macro that gen both async & sync fn, toggle via feature flag."
 keywords = ["async", "proc-macro", "macro"]
 categories = ["development-tools"]
-repository = "https://github.com/catilgrass/might_be_async"
 
 [lib]
 proc-macro = true
