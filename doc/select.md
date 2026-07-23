@@ -1,23 +1,22 @@
-Select between sync and async expressions based on a Cargo feature flag.
+Procedural macro that chooses between two expressions based on whether the
+async feature is enabled, producing a value.
 
 ## Explicit mode
 
-Provide feature names for each arm:
+Each arm is labelled with a feature name. When the named feature is enabled
+that arm is selected; otherwise the other arm is used. Since only one feature
+is ever active at a time, the arm labelled `"sync"` effectively acts as an else
+branch.
 
-```rust
-select!["async" => async_fn().await, "sync" => sync_fn()]
-```
-
-The `!` token negates a feature name:
-
-```rust
-select!["async" => async_fn().await, !        => sync_fn()]
-```
+The `!` token inverts the sense — it selects the arm when the corresponding
+feature is **not** enabled.
 
 ## Implicit mode
 
-Omit feature names; the macro auto-detects `.await`:
+Feature names are omitted; the macro inspects the token stream to decide which
+expression is async. Whichever arm contains a `.await` call is treated as the
+async branch.
 
-```rust
-select![async_fn().await, sync_fn()]
-```
+When neither arm contains `.await`, the first expression is assigned to the
+async branch and the second to sync. The two branches trade places during
+expansion so the correct one is active in each mode.
