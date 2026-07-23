@@ -22,8 +22,16 @@ pub(crate) use syn::Result as SynResult;
 ///
 /// The above code will be expanded into the following:
 ///
+/// Sync:
+///
 /// ```
 #[doc = include_str!("../doc/usage/func_expand.rs")]
+/// ```
+///
+/// Async:
+///
+/// ```
+#[doc = include_str!("../doc/usage/func_async_expand.rs")]
 /// ```
 #[proc_macro_attribute]
 pub fn func(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -42,8 +50,16 @@ pub fn func(attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// The above code will be expanded into the following:
 ///
+/// Sync:
+///
 /// ```
 #[doc = include_str!("../doc/usage/invoke_expand.rs")]
+/// ```
+///
+/// Async:
+///
+/// ```
+#[doc = include_str!("../doc/usage/invoke_async_expand.rs")]
 /// ```
 #[proc_macro]
 pub fn invoke(input: TokenStream) -> TokenStream {
@@ -62,8 +78,16 @@ pub fn invoke(input: TokenStream) -> TokenStream {
 ///
 /// The above code will be expanded into the following:
 ///
+/// Sync:
+///
 /// ```
 #[doc = include_str!("../doc/usage/select_expand.rs")]
+/// ```
+///
+/// Async:
+///
+/// ```
+#[doc = include_str!("../doc/usage/select_async_expand.rs")]
 /// ```
 #[proc_macro]
 pub fn select(input: TokenStream) -> TokenStream {

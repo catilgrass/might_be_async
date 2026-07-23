@@ -1,6 +1,6 @@
 """
-Generate `*_expand.rs` files in `doc/usage/` by running `cargo expand` on
-each usage example.
+Generate `*_expand.rs` and `*_async_expand.rs` files in `doc/usage/` by running
+`cargo expand` on each usage example, once for sync and once for async.
 
 Requires `cargo-expand` to be installed:
     cargo install cargo-expand
@@ -18,6 +18,21 @@ USAGE = ROOT / "doc" / "usage"
 EXPAND_BEGIN = "use might_be_async::*;\nconst EXPAND_BEGIN: () = ();"
 EXPAND_END = "const EXPAND_END: () = ();"
 
+CARGO_TOML = """\
+[package]
+name = "expander"
+version = "0.0.0"
+edition = "2024"
+
+[workspace]
+
+[features]
+async = []
+
+[dependencies]
+might_be_async = {{ path = "../.." }}
+"""
+
 
 def check_cargo_expand() -> None:
     """Ensure cargo-expand is installed."""
@@ -34,29 +49,18 @@ def check_cargo_expand() -> None:
 
 
 def prepare_temp() -> None:
-    """Create .temp/ skeleton with Cargo.toml that depends on might_be_async."""
+    """Create .temp/sync/ and .temp/async/ skeletons."""
     if TEMP.exists():
         shutil.rmtree(TEMP)
 
-    (TEMP / "src").mkdir(parents=True)
-
-    # Cargo.toml with an empty [workspace] to isolate from any parent workspace
-    (TEMP / "Cargo.toml").write_text("""\
-[package]
-name = "expander"
-version = "0.0.0"
-edition = "2024"
-
-[workspace]
-
-[dependencies]
-might_be_async = { path = ".." }
-""")
+    for variant in ("sync", "async"):
+        (TEMP / variant / "src").mkdir(parents=True)
+        (TEMP / variant / "Cargo.toml").write_text(CARGO_TOML)
 
 
-def write_lib_rs(source: str) -> None:
-    """Wrap `source` with EXPAND markers and write to .temp/src/lib.rs."""
-    (TEMP / "src" / "lib.rs").write_text(f"""\
+def write_lib_rs(variant: str, source: str) -> None:
+    """Wrap `source` with EXPAND markers and write to .temp/{variant}/src/lib.rs."""
+    (TEMP / variant / "src" / "lib.rs").write_text(f"""\
 #![allow(unused_imports, dead_code)]
 
 {EXPAND_BEGIN}
@@ -65,11 +69,16 @@ def write_lib_rs(source: str) -> None:
 """)
 
 
-def run_expand() -> str:
-    """Run `cargo expand` in .temp/ and return the stdout."""
+def run_expand(variant: str) -> str:
+    """Run `cargo expand` in .temp/{variant}/, optionally with --features async."""
+    cmd = ["cargo", "expand"]
+    if variant == "async":
+        cmd.append("--features")
+        cmd.append("async")
+
     result = subprocess.run(
-        ["cargo", "expand"],
-        cwd=TEMP,
+        cmd,
+        cwd=TEMP / variant,
         capture_output=True,
         text=True,
         check=True,
@@ -79,11 +88,9 @@ def run_expand() -> str:
 
 def extract_body(expanded: str) -> str:
     """Extract the text between the EXPAND_BEGIN and EXPAND_END markers."""
-    # Remove shebang (#![...]) lines at the top so the markers are easier to find
     lines = expanded.splitlines()
     cleaned = "\n".join(line for line in lines if not line.startswith("#!"))
 
-    # Find the marker lines
     begin_idx = cleaned.find(EXPAND_BEGIN)
     end_idx = cleaned.find(EXPAND_END)
 
@@ -93,15 +100,14 @@ def extract_body(expanded: str) -> str:
         print("\n".join(cleaned.splitlines()[:60]))
         sys.exit(1)
 
-    # Extract text between the two markers
     start = begin_idx + len(EXPAND_BEGIN)
     body = cleaned[start:end_idx]
     return body.strip()
 
 
-def write_expand(name: str, body: str) -> None:
-    """Write the expanded body to doc/usage/{name}_expand.rs."""
-    dest = USAGE / f"{name}_expand.rs"
+def write_expand(name: str, suffix: str, body: str) -> None:
+    """Write the expanded body to doc/usage/{name}_{suffix}expand.rs."""
+    dest = USAGE / f"{name}_{suffix}expand.rs"
     dest.write_text(body + "\n")
     print(f"  → {dest.name}")
 
@@ -111,7 +117,11 @@ def main() -> None:
     prepare_temp()
 
     # Find all input .rs files that are NOT already expanded
-    inputs = sorted(p for p in USAGE.glob("*.rs") if not p.name.endswith("_expand.rs"))
+    inputs = sorted(
+        p
+        for p in USAGE.glob("*.rs")
+        if not p.name.endswith("_expand.rs") and not p.name.endswith("_async_expand.rs")
+    )
 
     if not inputs:
         print("No usage examples found in doc/usage/")
@@ -122,10 +132,12 @@ def main() -> None:
     for src in inputs:
         stem = src.stem  # "func", "invoke", "select"
         code = src.read_text()
-        write_lib_rs(code)
-        expanded = run_expand()
-        body = extract_body(expanded)
-        write_expand(stem, body)
+
+        for variant, suffix in [("sync", ""), ("async", "async_")]:
+            write_lib_rs(variant, code)
+            expanded = run_expand(variant)
+            body = extract_body(expanded)
+            write_expand(stem, suffix, body)
 
     print("\nDone.")
 
