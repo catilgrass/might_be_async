@@ -1,7 +1,5 @@
 fn example() {
     select! {
-        "async" => { 100 }
-        else
-        ! => { 200 }
+        "async" => { 100 } else ! => { 200 }
     };
 }
