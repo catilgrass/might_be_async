@@ -1,3 +1,3 @@
-include!("../../src/test_func.rs");
-include!("../../src/test_invoke.rs");
-include!("../../src/test_select.rs");
+include!("test_func.rs");
+include!("test_invoke.rs");
+include!("test_select.rs");

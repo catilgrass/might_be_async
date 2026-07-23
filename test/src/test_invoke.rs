@@ -1,5 +1,3 @@
-//! Tests for the `invoke!` macro (shared).
-
 #[cfg(not(feature = "async"))]
 fn double(x: i32) -> i32 {
     x * 2
