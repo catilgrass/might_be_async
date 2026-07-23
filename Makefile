@@ -1,6 +1,6 @@
-.PHONY: test test-sync test-async expand
+.PHONY: test test-sync test-async expand fmt-expand
 
-test: expand test-sync test-async
+test: expand fmt-expand test-sync test-async
 
 test-sync:
 	cargo test -p might_be_async_test_sync --manifest-path test/Cargo.toml
@@ -10,3 +10,6 @@ test-async:
 
 expand:
 	python3 scripts/expand_codes.py
+
+fmt-expand:
+	rustfmt doc/usage/*.rs --edition 2024 --config blank_lines_lower_bound=1
