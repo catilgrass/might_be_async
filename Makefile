@@ -1,7 +1,7 @@
 .PHONY: check clippy check-lock test-crate test-sync test-async expand fmt-expand lock
 
 # make check
-check: clippy test-crate expand fmt-expand test-sync test-async check-lock
+check: clippy expand fmt-expand test-crate test-sync test-async check-lock
 
 # make lock
 lock:
