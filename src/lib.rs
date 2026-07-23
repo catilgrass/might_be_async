@@ -11,18 +11,60 @@ pub(crate) use proc_macro2::TokenStream as TokenStream2;
 pub(crate) use syn::Result as SynResult;
 
 #[doc = include_str!("../doc/func.md")]
+///
+/// # How to use?
+///
+/// ```
+#[doc = include_str!("../doc/usage/func.rs")]
+/// ```
+///
+/// # Expanded
+///
+/// The above code will be expanded into the following:
+///
+/// ```
+#[doc = include_str!("../doc/usage/func_expand.rs")]
+/// ```
 #[proc_macro_attribute]
 pub fn func(attr: TokenStream, item: TokenStream) -> TokenStream {
     func::func(attr, item)
 }
 
 #[doc = include_str!("../doc/invoke.md")]
+///
+/// # How to use?
+///
+/// ```
+#[doc = include_str!("../doc/usage/invoke.rs")]
+/// ```
+///
+/// # Expanded
+///
+/// The above code will be expanded into the following:
+///
+/// ```
+#[doc = include_str!("../doc/usage/invoke_expand.rs")]
+/// ```
 #[proc_macro]
 pub fn invoke(input: TokenStream) -> TokenStream {
     invoke::invoke(input)
 }
 
 #[doc = include_str!("../doc/select.md")]
+///
+/// # How to use?
+///
+/// ```
+#[doc = include_str!("../doc/usage/select.rs")]
+/// ```
+///
+/// # Expanded
+///
+/// The above code will be expanded into the following:
+///
+/// ```
+#[doc = include_str!("../doc/usage/select_expand.rs")]
+/// ```
 #[proc_macro]
 pub fn select(input: TokenStream) -> TokenStream {
     select::select(input)
