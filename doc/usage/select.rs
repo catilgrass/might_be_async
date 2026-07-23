@@ -1,3 +1,7 @@
-fn example() -> i32 {
-    select!["async" => 100, "sync" => 200]
+fn example() {
+    select! {
+        "async" => { 100 }
+        else
+        ! => { 200 }
+    };
 }

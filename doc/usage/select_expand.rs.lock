@@ -1,3 +1,7 @@
-fn example() -> i32 {
-    if false { 100 } else { 200 }
+fn example() {
+    if false {
+        { 100 }
+    } else {
+        { 200 }
+    };
 }

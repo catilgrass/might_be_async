@@ -39,7 +39,7 @@ fn add_then_double(a: i32, b: i32) -> i32 {
 #[func]
 fn pick(flag: bool) -> i32 {
     if flag {
-        select!["async" => 100, "sync" => 200]
+        select!("async" => 100 else ! => 200)
     } else {
         0
     }
