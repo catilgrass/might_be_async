@@ -84,13 +84,12 @@ impl SelectInput {
                 let f1_str = f1.value();
 
                 if has_not_prefix(&f0_str) && has_not_prefix(&f1_str) {
-                    let feat = default_feature_name();
-                    quote! { if cfg!(feature = #feat) { #b0 } else { #b1 } }
+                    cfg_block(&quote! { #b0 }, &quote! { #b1 })
                 } else if has_not_prefix(&f0_str) {
                     let inner = &f0_str[1..];
-                    quote! { if cfg!(feature = #inner) { #b1 } else { #b0 } }
+                    cfg_block_with_feat(inner, &quote! { #b1 }, &quote! { #b0 })
                 } else {
-                    quote! { if cfg!(feature = #f0_str) { #b0 } else { #b1 } }
+                    cfg_block_with_feat(&f0_str, &quote! { #b0 }, &quote! { #b1 })
                 }
             }
 
@@ -99,9 +98,9 @@ impl SelectInput {
                 let feat_str = feat.value();
                 if has_not_prefix(&feat_str) {
                     let inner = &feat_str[1..];
-                    quote! { if cfg!(feature = #inner) { #not_body } else { #body } }
+                    cfg_block_with_feat(inner, &quote! { #not_body }, &quote! { #body })
                 } else {
-                    quote! { if cfg!(feature = #feat_str) { #body } else { #not_body } }
+                    cfg_block_with_feat(&feat_str, &quote! { #body }, &quote! { #not_body })
                 }
             }
 
@@ -110,9 +109,9 @@ impl SelectInput {
                 let feat_str = feat.value();
                 if has_not_prefix(&feat_str) {
                     let inner = &feat_str[1..];
-                    quote! { if cfg!(feature = #inner) { #body } else { #not_body } }
+                    cfg_block_with_feat(inner, &quote! { #body }, &quote! { #not_body })
                 } else {
-                    quote! { if cfg!(feature = #feat_str) { #body } else { #not_body } }
+                    cfg_block_with_feat(&feat_str, &quote! { #body }, &quote! { #not_body })
                 }
             }
 
@@ -124,9 +123,9 @@ impl SelectInput {
                 let feat_str = feat.value();
                 if has_not_prefix(&feat_str) {
                     let inner = &feat_str[1..];
-                    quote! { if cfg!(feature = #inner) { #imp_body } else { #body } }
+                    cfg_block_with_feat(inner, &quote! { #imp_body }, &quote! { #body })
                 } else {
-                    quote! { if cfg!(feature = #feat_str) { #body } else { #imp_body } }
+                    cfg_block_with_feat(&feat_str, &quote! { #body }, &quote! { #imp_body })
                 }
             }
 
@@ -138,9 +137,9 @@ impl SelectInput {
                 let feat_str = feat.value();
                 if has_not_prefix(&feat_str) {
                     let inner = &feat_str[1..];
-                    quote! { if cfg!(feature = #inner) { #body } else { #imp_body } }
+                    cfg_block_with_feat(inner, &quote! { #body }, &quote! { #imp_body })
                 } else {
-                    quote! { if cfg!(feature = #feat_str) { #body } else { #imp_body } }
+                    cfg_block_with_feat(&feat_str, &quote! { #body }, &quote! { #imp_body })
                 }
             }
 
@@ -172,15 +171,27 @@ impl SelectInput {
 
             // Two Not
             (SelectArmArgs::Not { body: b0 }, SelectArmArgs::Not { body: b1 }) => {
-                let feat = default_feature_name();
-                quote! { if cfg!(feature = #feat) { #b0 } else { #b1 } }
+                cfg_block(&quote! { #b0 }, &quote! { #b1 })
             }
         }
     }
 }
 
+/// Generate a block that uses the default feature name.
+///
+/// This function creates a `#[cfg]` block that conditionally compiles one of two branches
+/// based on whether the default feature (as returned by [`default_feature_name()`]) is enabled.
 fn cfg_block(async_branch: &TokenStream2, sync_branch: &TokenStream2) -> TokenStream2 {
     let feat = default_feature_name();
+    cfg_block_with_feat(feat, async_branch, sync_branch)
+}
+
+/// Generate a block using a specific feature name.
+fn cfg_block_with_feat(
+    feat: &str,
+    async_branch: &TokenStream2,
+    sync_branch: &TokenStream2,
+) -> TokenStream2 {
     quote! {{
         #[cfg(feature = #feat)]
         { #async_branch }
