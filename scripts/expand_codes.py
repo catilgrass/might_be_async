@@ -14,3 +14,5 @@
 # 2. 执行 cargo expand，将const EXPAND_BEGIN: () = (); ... const EXPAND_END: () = ();的内容截取
 #
 # 3. trim 字符串，写入 doc/usage/源文件名_expand.rs
+
+# 这玩意加入 make test 中
