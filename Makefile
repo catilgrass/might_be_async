@@ -12,4 +12,4 @@ expand:
 	python3 scripts/expand_codes.py
 
 fmt-expand:
-	rustfmt doc/usage/*.rs --edition 2024 --config blank_lines_lower_bound=1
+	rustfmt doc/usage/* --edition 2024 --config blank_lines_lower_bound=0
