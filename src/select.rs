@@ -88,8 +88,6 @@ impl SelectInput {
                 } else if has_not_prefix(&f0_str) {
                     let inner = &f0_str[1..];
                     quote! { if cfg!(feature = #inner) { #b1 } else { #b0 } }
-                } else if has_not_prefix(&f1_str) {
-                    quote! { if cfg!(feature = #f0_str) { #b0 } else { #b1 } }
                 } else {
                     quote! { if cfg!(feature = #f0_str) { #b0 } else { #b1 } }
                 }
@@ -211,11 +209,13 @@ fn token_stream_has_await(ts: &TokenStream2) -> bool {
     let mut tokens = ts.clone().into_iter();
     while let Some(token) = tokens.next() {
         if let TokenTree::Punct(p) = &token
-            && p.as_char() == '.' && p.spacing() == Spacing::Alone
-                && let Some(TokenTree::Ident(ident)) = tokens.next()
-                    && ident == "await" {
-                        return true;
-                    }
+            && p.as_char() == '.'
+            && p.spacing() == Spacing::Alone
+            && let Some(TokenTree::Ident(ident)) = tokens.next()
+            && ident == "await"
+        {
+            return true;
+        }
     }
     false
 }
@@ -240,11 +240,12 @@ fn strip_await_from_tokens(ts: &TokenStream2) -> TokenStream2 {
     let len = tokens.len();
     if len >= 2
         && let TokenTree::Punct(p) = &tokens[len - 2]
-            && p.as_char() == '.'
-                && let TokenTree::Ident(ident) = &tokens[len - 1]
-                    && ident == "await" {
-                        return tokens[..len - 2].iter().cloned().collect();
-                    }
+        && p.as_char() == '.'
+        && let TokenTree::Ident(ident) = &tokens[len - 1]
+        && ident == "await"
+    {
+        return tokens[..len - 2].iter().cloned().collect();
+    }
     ts.clone()
 }
 
