@@ -56,3 +56,25 @@ pub(crate) fn func(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
+/// Test module for `FuncArgs` parsing.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_input_defaults_to_async() {
+        // Input: empty → defaults to "async"
+        let input = proc_macro2::TokenStream::new();
+        let args: FuncArgs = syn::parse2(input).unwrap();
+        assert_eq!(args.feature_name, "async");
+    }
+
+    #[test]
+    fn custom_feature_name_parsed() {
+        // Input: "custom_name"
+        let input: proc_macro2::TokenStream = "\"custom_name\"".parse().unwrap();
+        let args: FuncArgs = syn::parse2(input).unwrap();
+        assert_eq!(args.feature_name, "custom_name");
+    }
+}

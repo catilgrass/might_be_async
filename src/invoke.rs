@@ -56,3 +56,33 @@ pub(crate) fn invoke(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_variant() {
+        // Input: an expression without feature name → Default variant
+        let input: proc_macro2::TokenStream = "compute(5)".parse().unwrap();
+        let args: InvokeArgs = syn::parse2(input).unwrap();
+        match args {
+            InvokeArgs::Default(_) => {} // expected
+            _ => panic!("expected Default variant"),
+        }
+    }
+
+    #[test]
+    fn explicit_variant() {
+        // Input: "my_ft" => expr → Explicit variant with feature "my_ft"
+        let input: proc_macro2::TokenStream = "\"my_ft\" => compute(5)".parse().unwrap();
+        let args: InvokeArgs = syn::parse2(input).unwrap();
+        match args {
+            InvokeArgs::Explicit(feat, _) => {
+                assert_eq!(feat.value(), "my_ft");
+            }
+            _ => panic!("expected Explicit variant"),
+        }
+    }
+}
+

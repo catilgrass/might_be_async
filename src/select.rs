@@ -254,3 +254,49 @@ fn strip_await_from_tokens(ts: &TokenStream2) -> TokenStream2 {
     }
     ts.clone()
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::select::SelectArmArgs;
+    use quote::ToTokens;
+
+    /// Input: "async" => 100  → Explicit variant
+    #[test]
+    fn test_explicit_arm() {
+        let input: proc_macro2::TokenStream = "\"async\" => 100".parse().unwrap();
+        let arm: SelectArmArgs = syn::parse2(input).unwrap();
+        match &arm {
+            SelectArmArgs::Explicit { feat, body } => {
+                assert_eq!(feat.value(), "async");
+                assert_eq!(body.to_token_stream().to_string(), "100");
+            }
+            _ => panic!("expected Explicit variant"),
+        }
+    }
+
+    /// Input: ! => 200  → Not variant
+    #[test]
+    fn test_not_arm() {
+        let input: proc_macro2::TokenStream = "! => 200".parse().unwrap();
+        let arm: SelectArmArgs = syn::parse2(input).unwrap();
+        match &arm {
+            SelectArmArgs::Not { body } => {
+                assert_eq!(body.to_token_stream().to_string(), "200");
+            }
+            _ => panic!("expected Not variant"),
+        }
+    }
+
+    /// Input: 1 + 2  → Implicit variant (no feature name)
+    #[test]
+    fn test_implicit_arm() {
+        let input: proc_macro2::TokenStream = "1 + 2".parse().unwrap();
+        let arm: SelectArmArgs = syn::parse2(input).unwrap();
+        match &arm {
+            SelectArmArgs::Implicit { body } => {
+                assert_eq!(body.to_token_stream().to_string(), "1 + 2");
+            }
+            _ => panic!("expected Implicit variant"),
+        }
+    }
+}

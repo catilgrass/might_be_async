@@ -1,6 +1,9 @@
-.PHONY: test test-sync test-async expand fmt-expand
+.PHONY: test test-crate test-sync test-async expand fmt-expand
 
-test: expand fmt-expand test-sync test-async
+test: expand fmt-expand test-crate test-sync test-async
+
+test-crate:
+	cargo test
 
 test-sync:
 	cargo test -p might_be_async_test_sync --manifest-path test/Cargo.toml
