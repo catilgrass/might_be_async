@@ -308,4 +308,218 @@ mod tests {
             _ => panic!("expected Implicit variant"),
         }
     }
+
+    #[test]
+    fn test_cfg_block_generates_cfg_attributes() {
+        use crate::select::cfg_block;
+        let result = cfg_block(&quote::quote! { async_fn() }, &quote::quote! { sync_fn() });
+        let s = result.to_string();
+        assert!(
+            s.contains("cfg (feature"),
+            "expected cfg(feature in output, got: {s}"
+        );
+        assert!(
+            s.contains("async_fn"),
+            "expected async_fn in output, got: {s}"
+        );
+        assert!(
+            s.contains("sync_fn"),
+            "expected sync_fn in output, got: {s}"
+        );
+    }
+
+    #[test]
+    fn test_cfg_block_uses_default_feature() {
+        use crate::config::default_feature_name;
+        use crate::select::cfg_block;
+        let result = cfg_block(&quote::quote! { a }, &quote::quote! { b });
+        let s = result.to_string();
+        let default_feat = default_feature_name();
+        // TokenStream representation adds spaces: (feature = "foo_async")
+        assert!(s.contains(&format!("feature = {:?}", default_feat)));
+    }
+
+    #[test]
+    fn test_cfg_block_with_feat_uses_custom_feature() {
+        use crate::select::cfg_block_with_feat;
+        let result = cfg_block_with_feat("my_feat", &quote::quote! { a }, &quote::quote! { b });
+        let s = result.to_string();
+        // TokenStream inserts spaces around punctuation, so match the actual format
+        assert!(
+            s.contains("# [cfg (feature = \"my_feat\")]"),
+            "expected #[cfg(feature = \"my_feat\")] in output, got: {s}"
+        );
+        assert!(
+            s.contains("# [cfg (not (feature = \"my_feat\"))]"),
+            "expected #[cfg(not(feature = \"my_feat\"))] in output, got: {s}"
+        );
+    }
+
+    #[test]
+    fn test_cfg_block_with_feat_branch_order() {
+        use crate::select::cfg_block_with_feat;
+        // The async_branch (first branch) goes under cfg(feature = ...)
+        // The sync_branch (second branch) goes under cfg(not(...))
+        let result = cfg_block_with_feat(
+            "x",
+            &quote::quote! { first_val },
+            &quote::quote! { second_val },
+        );
+        let s = result.to_string();
+        // TokenStream representation has spaces: # [cfg (feature = "x")]
+        let feat_pos = s.find("# [cfg (feature = \"x\")]").unwrap();
+        let first_pos = s.find("first_val").unwrap();
+        // second_branch should be after cfg(not(...))
+        let not_pos = s.find("# [cfg (not (feature = \"x\"))]").unwrap();
+        let second_pos = s.find("second_val").unwrap();
+        assert!(
+            feat_pos < first_pos,
+            "async_branch should follow #[cfg(feature)]"
+        );
+        assert!(
+            not_pos < second_pos,
+            "sync_branch should follow #[cfg(not)]"
+        );
+    }
+
+    #[test]
+    fn test_both_explicit_block_generates_two_cfg_gates() {
+        use crate::select::both_explicit_block;
+        let result = both_explicit_block(
+            "a",
+            &quote::quote! { branch_a },
+            "b",
+            &quote::quote! { branch_b },
+        );
+        let s = result.to_string();
+        // TokenStream representation has spaces
+        assert!(
+            s.contains("# [cfg (feature = \"a\")]"),
+            "expected #[cfg(feature = \"a\")] in output, got: {s}"
+        );
+        assert!(
+            s.contains("# [cfg (feature = \"b\")]"),
+            "expected #[cfg(feature = \"b\")] in output, got: {s}"
+        );
+        assert!(s.contains("branch_a"));
+        assert!(s.contains("branch_b"));
+    }
+
+    #[test]
+    fn test_both_explicit_block_no_not_cfg() {
+        use crate::select::both_explicit_block;
+        let result =
+            both_explicit_block("x", &quote::quote! { x_val }, "y", &quote::quote! { y_val });
+        let s = result.to_string();
+        // Should NOT contain cfg(not(...))
+        assert!(!s.contains("# [cfg (not"));
+    }
+
+    #[test]
+    fn test_has_not_prefix_with_exclamation() {
+        use crate::select::has_not_prefix;
+        assert!(has_not_prefix("!feat"));
+        assert!(has_not_prefix("!"));
+        assert!(has_not_prefix("!abc"));
+    }
+
+    #[test]
+    fn test_has_not_prefix_without_exclamation() {
+        use crate::select::has_not_prefix;
+        assert!(!has_not_prefix("feat"));
+        assert!(!has_not_prefix(""));
+        assert!(!has_not_prefix("abc!"));
+        // "!!" starts with '!', so this is actually true — fix the assertion
+        assert!(has_not_prefix("!!"));
+    }
+
+    #[test]
+    fn test_token_stream_has_await_detects_await() {
+        use crate::select::token_stream_has_await;
+        let ts: proc_macro2::TokenStream = "foo.await".parse().unwrap();
+        assert!(token_stream_has_await(&ts));
+    }
+
+    #[test]
+    fn test_token_stream_has_await_no_await() {
+        use crate::select::token_stream_has_await;
+        let ts: proc_macro2::TokenStream = "foo.bar()".parse().unwrap();
+        assert!(!token_stream_has_await(&ts));
+    }
+
+    #[test]
+    fn test_token_stream_has_await_empty() {
+        use crate::select::token_stream_has_await;
+        let ts: proc_macro2::TokenStream = "".parse().unwrap();
+        assert!(!token_stream_has_await(&ts));
+    }
+
+    #[test]
+    fn test_token_stream_has_await_await_in_expr() {
+        use crate::select::token_stream_has_await;
+        // .await inside a larger expression
+        let ts: proc_macro2::TokenStream = "let x = some_future.await;".parse().unwrap();
+        assert!(token_stream_has_await(&ts));
+    }
+
+    #[test]
+    fn test_token_stream_has_await_dot_only_not_await() {
+        use crate::select::token_stream_has_await;
+        // . followed by something else like .foo()
+        let ts: proc_macro2::TokenStream = "x.foo()".parse().unwrap();
+        assert!(!token_stream_has_await(&ts));
+    }
+
+    #[test]
+    fn test_strip_await_from_tokens_removes_await() {
+        use crate::select::strip_await_from_tokens;
+        let ts: proc_macro2::TokenStream = "foo.await".parse().unwrap();
+        let stripped = strip_await_from_tokens(&ts);
+        let s = stripped.to_string();
+        assert!(
+            !s.contains("await"),
+            "stripped output should not contain 'await', got: {s}"
+        );
+    }
+
+    #[test]
+    fn test_strip_await_from_tokens_preserves_prefix() {
+        use crate::select::strip_await_from_tokens;
+        let ts: proc_macro2::TokenStream = "some_future.await".parse().unwrap();
+        let stripped = strip_await_from_tokens(&ts);
+        let s = stripped.to_string();
+        assert!(
+            s.contains("some_future"),
+            "should preserve 'some_future', got: {s}"
+        );
+    }
+
+    #[test]
+    fn test_strip_await_from_tokens_no_await_is_unchanged() {
+        use crate::select::strip_await_from_tokens;
+        let ts: proc_macro2::TokenStream = "simple_expr".parse().unwrap();
+        let stripped = strip_await_from_tokens(&ts);
+        assert_eq!(stripped.to_string(), "simple_expr");
+    }
+
+    #[test]
+    fn test_strip_await_from_tokens_empty_is_unchanged() {
+        use crate::select::strip_await_from_tokens;
+        let ts: proc_macro2::TokenStream = "".parse().unwrap();
+        let stripped = strip_await_from_tokens(&ts);
+        assert_eq!(stripped.to_string(), "");
+    }
+
+    #[test]
+    fn test_strip_await_from_tokens_complex_expr() {
+        use crate::select::strip_await_from_tokens;
+        let ts: proc_macro2::TokenStream = "async_fn().await".parse().unwrap();
+        let stripped = strip_await_from_tokens(&ts);
+        let s = stripped.to_string();
+        assert!(
+            s.contains("async_fn"),
+            "should preserve 'async_fn', got: {s}"
+        );
+        assert!(!s.contains("await"), "should not contain 'await', got: {s}");
+    }
 }
