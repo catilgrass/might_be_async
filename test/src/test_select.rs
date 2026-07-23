@@ -1,3 +1,5 @@
+//! Tests for the `select!` macro (shared).
+
 #[cfg(not(feature = "async"))]
 #[test]
 fn test_select_explicit() {
@@ -50,6 +52,8 @@ fn test_select_implicit() {
 #[cfg(feature = "async")]
 #[test]
 fn test_select_implicit() {
-    let r = might_be_async::select! { 1 + 2, 3 + 4 };
+    let r = futures::executor::block_on(async {
+        might_be_async::select! { 1 + 2, 3 + 4 }
+    });
     assert_eq!(r, 3);
 }

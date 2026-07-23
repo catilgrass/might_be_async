@@ -1,3 +1,5 @@
+//! Tests for the `invoke!` macro (shared).
+
 #[cfg(not(feature = "async"))]
 fn double(x: i32) -> i32 {
     x * 2
@@ -17,5 +19,6 @@ fn test_invoke_default() {
 #[cfg(feature = "async")]
 #[test]
 fn test_invoke_default() {
-    assert_eq!(might_be_async::invoke!(double(5)), 10);
+    let result = futures::executor::block_on(async { might_be_async::invoke!(double(5)) });
+    assert_eq!(result, 10);
 }

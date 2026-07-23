@@ -8,3 +8,4 @@ async = []
 
 [dependencies]
 might_be_async = { path = "../.." }
+futures = "0.3"
