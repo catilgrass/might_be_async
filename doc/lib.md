@@ -5,11 +5,17 @@ functions, gated by a Cargo feature flag.
 
 ## Provided macros
 
-| Macro     | Kind       | Purpose                                                   |
-| --------- | ---------- | --------------------------------------------------------- |
-| `#[func]` | attribute  | Generates sync + async versions of a function             |
-| `invoke!` | procedural | Wraps a call, adding `.await` when the feature is enabled |
-| `select!` | procedural | Chooses between two expressions based on the feature flag |
+### `#[func]` — Attribute macro
+
+Generates both synchronous and asynchronous versions of a function, gated by a Cargo feature flag. When the feature is off, the function is a plain `fn`; when on, it becomes an `async fn`.
+
+### `invoke!` — Proc macro
+
+Wraps a function call, automatically adding `.await` when the feature is enabled. This lets you call `#[func]`-annotated functions without worrying about whether they are sync or async at the call site.
+
+### `select!` — Proc macro
+
+Chooses between two expressions at compile time based on whether the feature flag is active. The first branch (marked with `"async" =>`) is taken when the feature is enabled; the second branch (marked with `! =>`) is taken otherwise.
 
 ## Complete example
 
