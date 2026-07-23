@@ -21,13 +21,8 @@ fn test_invoke_default() {
     assert_eq!(result, 10);
 }
 
-#[cfg(not(feature = "metadata_async"))]
+#[might_be_async::func]
 fn square(x: i32) -> i32 {
-    x * x
-}
-
-#[cfg(feature = "metadata_async")]
-async fn square(x: i32) -> i32 {
     x * x
 }
 
@@ -39,9 +34,16 @@ fn test_invoke_explicit() {
 
 #[cfg(feature = "metadata_async")]
 #[test]
-fn test_invoke_explicit() {
+fn test_invoke_explicit_sync() {
     let result = futures::executor::block_on(async {
         might_be_async::invoke!("custom_invoke" => square(6))
     });
+    assert_eq!(result, 36);
+}
+
+#[cfg(not(feature = "metadata_async"))]
+#[test]
+fn test_invoke_explicit_async() {
+    let result = might_be_async::invoke!("custom_invoke" => square(6));
     assert_eq!(result, 36);
 }
