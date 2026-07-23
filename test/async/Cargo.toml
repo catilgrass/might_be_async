@@ -4,7 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-async = []
+metadata_async = []
+custom_ft = []
+custom_invoke = []
+
+[package.metadata.might_be_async]
+default_feature_name = "metadata_async"
 
 [dependencies]
 might_be_async = { path = "../.." }

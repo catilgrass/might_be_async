@@ -3,7 +3,7 @@ fn identity(x: i32) -> i32 {
     x
 }
 
-#[cfg(not(feature = "async"))]
+#[cfg(not(feature = "metadata_async"))]
 #[test]
 fn test_func_identity() {
     assert_eq!(identity(42), 42);
@@ -17,7 +17,7 @@ where
     a.clone()
 }
 
-#[cfg(not(feature = "async"))]
+#[cfg(not(feature = "metadata_async"))]
 #[test]
 fn test_func_generic() {
     assert_eq!(first(1, 2), 1);
@@ -29,7 +29,7 @@ fn triple(x: i32) -> i32 {
     x * 3
 }
 
-#[cfg(not(feature = "async"))]
+#[cfg(not(feature = "metadata_async"))]
 #[test]
 fn test_func_custom_feature() {
     assert_eq!(triple(3), 9);
