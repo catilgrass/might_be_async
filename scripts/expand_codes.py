@@ -49,13 +49,22 @@ def check_cargo_expand() -> None:
 
 
 def prepare_temp() -> None:
-    """Create .temp/sync/ and .temp/async/ skeletons."""
+    """Create .temp/sync/ and .temp/async/ skeletons, and placeholder expand files."""
     if TEMP.exists():
         shutil.rmtree(TEMP)
 
     for variant in ("sync", "async"):
         (TEMP / variant / "src").mkdir(parents=True)
         (TEMP / variant / "Cargo.toml").write_text(CARGO_TOML)
+
+    # Create placeholder _async_expand.rs files so the main crate can compile
+    # during cargo expand. They will be overwritten with real content later.
+    for name in ("func", "invoke", "select"):
+        placeholder = USAGE / f"{name}_async_expand.rs"
+        if not placeholder.exists():
+            placeholder.write_text(
+                "// placeholder — will be overwritten by expand script\n"
+            )
 
 
 def write_lib_rs(variant: str, source: str) -> None:
