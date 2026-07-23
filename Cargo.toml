@@ -1,10 +1,15 @@
 [package]
 name = "might_be_async"
+authors = ["Weicao-CatilGrass"]
 version = "0.1.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
+readme = "README.md"
 repository = "https://github.com/catilgrass/might_be_async"
 description = "A proc macro that gen both async & sync fn, toggle via feature flag."
+keywords = ["async", "proc-macro", "macro"]
+categories = ["development-tools"]
+repository = "https://github.com/catilgrass/might_be_async"
 
 [lib]
 proc-macro = true
