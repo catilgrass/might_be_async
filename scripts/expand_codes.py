@@ -30,7 +30,7 @@ edition = "2024"
 async = []
 
 [dependencies]
-might_be_async = {{ path = "../.." }}
+might_be_async = { path = "../.." }
 """
 
 
@@ -76,14 +76,19 @@ def run_expand(variant: str) -> str:
         cmd.append("--features")
         cmd.append("async")
 
-    result = subprocess.run(
-        cmd,
-        cwd=TEMP / variant,
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return result.stdout
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=TEMP / variant,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        print(f"error: `cargo expand` failed in .temp/{variant}/:", file=sys.stderr)
+        print(e.stderr, file=sys.stderr)
+        sys.exit(1)
 
 
 def extract_body(expanded: str) -> str:

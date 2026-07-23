@@ -15,6 +15,7 @@ pub(crate) use syn::Result as SynResult;
 /// # How to use?
 ///
 /// ```
+/// # use might_be_async::*;
 #[doc = include_str!("../doc/usage/func.rs")]
 /// ```
 ///
@@ -25,12 +26,14 @@ pub(crate) use syn::Result as SynResult;
 /// Sync:
 ///
 /// ```
+/// # use might_be_async::*;
 #[doc = include_str!("../doc/usage/func_expand.rs")]
 /// ```
 ///
 /// Async:
 ///
 /// ```
+/// # use might_be_async::*;
 #[doc = include_str!("../doc/usage/func_async_expand.rs")]
 /// ```
 #[proc_macro_attribute]
@@ -43,6 +46,7 @@ pub fn func(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// # How to use?
 ///
 /// ```
+/// # use might_be_async::*;
 #[doc = include_str!("../doc/usage/invoke.rs")]
 /// ```
 ///
@@ -53,12 +57,14 @@ pub fn func(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// Sync:
 ///
 /// ```
+/// # use might_be_async::*;
 #[doc = include_str!("../doc/usage/invoke_expand.rs")]
 /// ```
 ///
 /// Async:
 ///
 /// ```
+/// # use might_be_async::*;
 #[doc = include_str!("../doc/usage/invoke_async_expand.rs")]
 /// ```
 #[proc_macro]
@@ -71,6 +77,7 @@ pub fn invoke(input: TokenStream) -> TokenStream {
 /// # How to use?
 ///
 /// ```
+/// # use might_be_async::*;
 #[doc = include_str!("../doc/usage/select.rs")]
 /// ```
 ///
@@ -81,12 +88,14 @@ pub fn invoke(input: TokenStream) -> TokenStream {
 /// Sync:
 ///
 /// ```
+/// # use might_be_async::*;
 #[doc = include_str!("../doc/usage/select_expand.rs")]
 /// ```
 ///
 /// Async:
 ///
 /// ```
+/// # use might_be_async::*;
 #[doc = include_str!("../doc/usage/select_async_expand.rs")]
 /// ```
 #[proc_macro]
