@@ -36,26 +36,6 @@ impl Parse for SelectArm {
     }
 }
 
-impl ToTokens for SelectArm {
-    fn to_tokens(&self, tokens: &mut TokenStream2) {
-        match self {
-            SelectArm::Explicit { feat, body } => {
-                feat.to_tokens(tokens);
-                Token![=>].to_tokens(tokens);
-                body.to_tokens(tokens);
-            }
-            SelectArm::Not { body } => {
-                Token![!].to_tokens(tokens);
-                Token![=>].to_tokens(tokens);
-                body.to_tokens(tokens);
-            }
-            SelectArm::Implicit { body } => {
-                body.to_tokens(tokens);
-            }
-        }
-    }
-}
-
 // ─── SelectInput ────────────────────────────────────────────────────────────────────────
 
 struct SelectInput {
@@ -109,7 +89,7 @@ impl SelectInput {
                         { #b1 }
                     }}
                 } else if has_not_prefix(&f1_str) {
-                    let inner = &f1_str[1..];
+                    let _inner = &f1_str[1..];
                     quote! {{
                         #[cfg(feature = #f0)]
                         { #b0 }
@@ -208,8 +188,8 @@ impl SelectInput {
 
             // Both implicit — auto-detect .await
             (SelectArm::Implicit { body: b0 }, SelectArm::Implicit { body: b1 }) => {
-                let b0_has_await = token_stream_has_await(&b0.to_token_stream());
-                let b1_has_await = token_stream_has_await(&b1.to_token_stream());
+                let b0_has_await = token_stream_has_await(&b0.into_token_stream());
+                let b1_has_await = token_stream_has_await(&b1.into_token_stream());
 
                 match (b0_has_await, b1_has_await) {
                     (true, false) => {
@@ -230,7 +210,7 @@ impl SelectInput {
                     }
                     (true, true) => {
                         // Both have .await — use second as sync (strip .await)
-                        let b1_stripped = strip_await_from_tokens(&b1.to_token_stream());
+                        let b1_stripped = strip_await_from_tokens(&b1.into_token_stream());
                         quote! {{
                             #[cfg(feature = "async")]
                             { #b0 }
@@ -248,6 +228,24 @@ impl SelectInput {
                         }}
                     }
                 }
+            }
+
+            // Not + Implicit
+            (SelectArm::Not { body: not_body }, SelectArm::Implicit { body: imp_body }) => {
+                quote! {{
+                    #[cfg(feature = "async")]
+                    { #not_body }
+                    #[cfg(not(feature = "async"))]
+                    { #imp_body }
+                }}
+            }
+            (SelectArm::Implicit { body: imp_body }, SelectArm::Not { body: not_body }) => {
+                quote! {{
+                    #[cfg(not(feature = "async"))]
+                    { #imp_body }
+                    #[cfg(feature = "async")]
+                    { #not_body }
+                }}
             }
 
             // Two Not arms — doesn't make sense, fallback
