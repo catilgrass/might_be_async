@@ -88,8 +88,10 @@ impl SelectInput {
                 } else if has_not_prefix(&f0_str) {
                     let inner = &f0_str[1..];
                     cfg_block_with_feat(inner, &quote! { #b1 }, &quote! { #b0 })
-                } else {
+                } else if has_not_prefix(&f1_str) {
                     cfg_block_with_feat(&f0_str, &quote! { #b0 }, &quote! { #b1 })
+                } else {
+                    both_explicit_block(&f0_str, &quote! { #b0 }, &f1_str, &quote! { #b1 })
                 }
             }
 
@@ -197,6 +199,21 @@ fn cfg_block_with_feat(
         { #async_branch }
         #[cfg(not(feature = #feat))]
         { #sync_branch }
+    }}
+}
+
+/// Generate a block where each arm is gated by its own feature.
+fn both_explicit_block(
+    feat0: &str,
+    branch0: &TokenStream2,
+    feat1: &str,
+    branch1: &TokenStream2,
+) -> TokenStream2 {
+    quote! {{
+        #[cfg(feature = #feat0)]
+        { #branch0 }
+        #[cfg(feature = #feat1)]
+        { #branch1 }
     }}
 }
 
