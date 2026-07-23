@@ -1,5 +1,3 @@
-// Tests for the `select!` macro (shared).
-
 #[cfg(not(feature = "async"))]
 #[test]
 fn test_select_explicit() {

@@ -1,5 +1,3 @@
-// Tests for the `#[func]` attribute macro (shared).
-
 #[might_be_async::func]
 fn identity(x: i32) -> i32 {
     x

@@ -145,9 +145,8 @@ impl SelectInput {
                         cfg_block(&quote! { #b0 }, &quote! { #b1_stripped })
                     }
                     (false, false) => {
-                        // Neither has .await — add .await to async branch
-                        let async_branch = quote! { #b0 .await };
-                        cfg_block(&async_branch, &quote! { #b1 })
+                        // Neither has .await — use first as async branch as-is
+                        cfg_block(&quote! { #b0 }, &quote! { #b1 })
                     }
                 }
             }
