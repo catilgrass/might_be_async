@@ -1,4 +1,4 @@
 #[func]
 pub fn greet(name: &str) -> String {
-    format!("Hello, {name}!")
+    "Hello, {name}!".to_string()
 }
