@@ -1,17 +1,12 @@
-详细介绍这个项目
+# might_be_async
 
-```rust
-这里写基本用法的代码
-```
+A proc-macro crate that generates both synchronous and asynchronous versions of
+functions, gated by a Cargo feature flag.
 
-# `invoke!()` 宏
+## Provided macros
 
-xxx
-
-# `select![]` 宏
-
-xxx
-
-# `#[func]` 宏
-
-xxx
+| Macro     | Kind       | Purpose                                                   |
+| --------- | ---------- | --------------------------------------------------------- |
+| `#[func]` | attribute  | Generates sync + async versions of a function             |
+| `invoke!` | procedural | Wraps a call, adding `.await` when the feature is enabled |
+| `select!` | procedural | Chooses between two expressions based on the feature flag |

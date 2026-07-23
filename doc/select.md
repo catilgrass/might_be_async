@@ -1,9 +1,23 @@
-一句话介绍
+Select between sync and async expressions based on a Cargo feature flag.
 
-如果一句话介绍不完，请在此用更多文本补充
+## Explicit mode
 
-## How to use
+Provide feature names for each arm:
 
-示例代码，禁止 `ignore、`no_run 等，保持可用
+```rust
+select!["async" => async_fn().await, "sync" => sync_fn()]
+```
 
-## Expand
+The `!` token negates a feature name:
+
+```rust
+select!["async" => async_fn().await, !        => sync_fn()]
+```
+
+## Implicit mode
+
+Omit feature names; the macro auto-detects `.await`:
+
+```rust
+select![async_fn().await, sync_fn()]
+```

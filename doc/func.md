@@ -1,9 +1,11 @@
-一句话介绍
+Attribute macro that generates both a sync and an async version of a function,
+gated by a Cargo feature flag.
 
-如果一句话介绍不完，请在此用更多文本补充
+The function is written as a regular (non-async) `fn`. The macro duplicates it:
 
-## How to use
+| Feature disabled | Feature enabled      |
+| ---------------- | -------------------- |
+| `fn name(...)`   | `async fn name(...)` |
 
-示例代码，禁止 `ignore、`no_run 等，保持可用
-
-## Expand
+By default the feature name is `"async"`. A custom name can be provided:
+`#[func("tokio_rt")]`.

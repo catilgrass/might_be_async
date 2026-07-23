@@ -1,9 +1,15 @@
-一句话介绍
+Wraps a call expression, adding `.await` when the async feature is enabled.
 
-如果一句话介绍不完，请在此用更多文本补充
+When the feature is **disabled**, the expression is left as-is:
 
-## How to use
+```rust
+double(5)        // sync: call directly
+```
 
-示例代码，禁止 `ignore、`no_run 等，保持可用
+When the feature is **enabled**, `.await` is appended:
 
-## Expand
+```rust
+double(5).await  // async: await the future
+```
+
+An explicit feature name can be provided: `invoke!("tokio_rt" => double(5))`.
