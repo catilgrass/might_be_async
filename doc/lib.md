@@ -45,8 +45,7 @@ fn pick(flag: bool) -> i32 {
     }
 }
 
-// Default features → sync path: all functions are plain fn.
-assert_eq!(add_then_double(3, 4), 14); // (3+4)*2
-assert_eq!(pick(true), 200);           // "sync" arm
+assert_eq!(add_then_double(3, 4), 14);
+assert_eq!(pick(true), 200);
 assert_eq!(pick(false), 0);
 ```
