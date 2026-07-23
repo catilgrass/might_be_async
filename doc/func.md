@@ -1,26 +1,9 @@
-Attribute macro that generates both a sync and an async version of a function,
-gated by a Cargo feature flag.
+一句话介绍
 
-# Usage
+如果一句话介绍不完，请在此用更多文本补充
 
-```ignore
-/// Doc comments are preserved
-#[might_be_async::func]
-pub fn my_function<T: Clone>(arg: T) -> ReturnType
-where T: Debug
-{
-    // body — written as a regular (non-async) function
-}
-```
+## How to use
 
-Expands to:
+示例代码，禁止 `ignore、`no_run 等，保持可用
 
-- `#[cfg(not(feature = "async"))] fn my_function(...)` — sync version
-- `#[cfg(feature = "async")] async fn my_function(...)` — async version
-
-An explicit feature name can be provided:
-
-```ignore
-#[might_be_async::func("tokio_rt")]
-pub fn my_function() { ... }
-```
+## Expand

@@ -1,11 +1,9 @@
-Wraps a call expression, adding `.await` when the async feature is enabled.
+一句话介绍
 
-# Usage
+如果一句话介绍不完，请在此用更多文本补充
 
-```ignore
-// Default feature name ("async"):
-let result = might_be_async::invoke!(some_async_fn(args));
+## How to use
 
-// Explicit feature name:
-let result = might_be_async::invoke!("tokio_rt" => some_async_fn(args));
-```
+示例代码，禁止 `ignore、`no_run 等，保持可用
+
+## Expand

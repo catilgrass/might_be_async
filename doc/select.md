@@ -1,19 +1,9 @@
-Select between sync and async expressions based on a Cargo feature flag.
+一句话介绍
 
-# Usage
+如果一句话介绍不完，请在此用更多文本补充
 
-## Explicit mode (with feature names)
+## How to use
 
-```ignore
-select!["async" => expr_async().await, "sync" => expr_sync()];
-select!["async" => { expr_async().await }, "sync" => { expr_sync() }];
-select!["async" => expr_async().await, !        => expr_sync()];
-select![!        => expr_async().await, "sync" => expr_sync()];
-```
+示例代码，禁止 `ignore、`no_run 等，保持可用
 
-## Implicit mode (auto-detect `.await`)
-
-```ignore
-select![expr_async().await, expr_sync()];
-select![{ expr_async().await }, { expr_sync() }];
-```
+## Expand
