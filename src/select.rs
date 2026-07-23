@@ -1,50 +1,55 @@
+use crate::SynResult;
+use crate::TokenStream2;
 use proc_macro::TokenStream;
-use proc_macro2::{Spacing, TokenStream as TokenStream2, TokenTree};
+use proc_macro2::{Spacing, TokenTree};
 use quote::{ToTokens, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::{Expr, LitStr, Token, parse_macro_input};
 
-// ─── SelectArm ──────────────────────────────────────────────────────────────────────────
-
-/// A single arm inside `select!`.
-pub enum SelectArm {
+#[doc = include_str!("../doc/args/select_arm.md")]
+pub enum SelectArmArgs {
     /// "feat_name" => expr
     Explicit { feat: LitStr, body: Expr },
+
     /// ! => expr
     Not { body: Expr },
+
     /// expr (no feature name — auto-detect by .await)
     Implicit { body: Expr },
 }
 
-impl Parse for SelectArm {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
+impl Parse for SelectArmArgs {
+    fn parse(input: ParseStream) -> SynResult<Self> {
+        // Try to parse an explicit feature name: "feature_name" => expr
         if input.peek(LitStr) {
             let feat: LitStr = input.parse()?;
             input.parse::<Token![=>]>()?;
             let body: Expr = input.parse()?;
-            Ok(SelectArm::Explicit { feat, body })
-        } else if input.peek(Token![!]) {
+            Ok(SelectArmArgs::Explicit { feat, body })
+        }
+        // Try to parse a negation arm: ! => expr
+        else if input.peek(Token![!]) {
             let _not: Token![!] = input.parse()?;
             input.parse::<Token![=>]>()?;
             let body: Expr = input.parse()?;
-            Ok(SelectArm::Not { body })
-        } else {
+            Ok(SelectArmArgs::Not { body })
+        }
+        // Otherwise treat as an implicit arm (auto-detect whether it contains .await)
+        else {
             let body: Expr = input.parse()?;
-            Ok(SelectArm::Implicit { body })
+            Ok(SelectArmArgs::Implicit { body })
         }
     }
 }
 
-// ─── SelectInput ────────────────────────────────────────────────────────────────────────
-
 struct SelectInput {
-    arms: Vec<SelectArm>,
+    arms: Vec<SelectArmArgs>,
 }
 
 impl Parse for SelectInput {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let punctuated: Punctuated<SelectArm, Token![,]> = Punctuated::parse_terminated(input)?;
+    fn parse(input: ParseStream) -> SynResult<Self> {
+        let punctuated: Punctuated<SelectArmArgs, Token![,]> = Punctuated::parse_terminated(input)?;
 
         if punctuated.len() != 2 {
             return Err(syn::Error::new(
@@ -53,12 +58,10 @@ impl Parse for SelectInput {
             ));
         }
 
-        let arms: Vec<SelectArm> = punctuated.into_iter().collect();
+        let arms: Vec<SelectArmArgs> = punctuated.into_iter().collect();
         Ok(SelectInput { arms })
     }
 }
-
-// ─── Select macro ───────────────────────────────────────────────────────────────────────
 
 pub(crate) fn select(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as SelectInput);
@@ -74,8 +77,8 @@ impl SelectInput {
         match (arm0, arm1) {
             // Both explicit — use cfg!() since no .await to worry about
             (
-                SelectArm::Explicit { feat: f0, body: b0 },
-                SelectArm::Explicit { feat: f1, body: b1 },
+                SelectArmArgs::Explicit { feat: f0, body: b0 },
+                SelectArmArgs::Explicit { feat: f1, body: b1 },
             ) => {
                 let f0_str = f0.value();
                 let f1_str = f1.value();
@@ -93,7 +96,7 @@ impl SelectInput {
             }
 
             // Explicit + Not — cfg!() safe (no .await)
-            (SelectArm::Explicit { feat, body }, SelectArm::Not { body: not_body }) => {
+            (SelectArmArgs::Explicit { feat, body }, SelectArmArgs::Not { body: not_body }) => {
                 let feat_str = feat.value();
                 if has_not_prefix(&feat_str) {
                     let inner = &feat_str[1..];
@@ -102,7 +105,9 @@ impl SelectInput {
                     quote! { if cfg!(feature = #feat_str) { #body } else { #not_body } }
                 }
             }
-            (SelectArm::Not { body: not_body }, SelectArm::Explicit { feat, body }) => {
+
+            // Not + Explicit — cfg!() safe (no .await)
+            (SelectArmArgs::Not { body: not_body }, SelectArmArgs::Explicit { feat, body }) => {
                 let feat_str = feat.value();
                 if has_not_prefix(&feat_str) {
                     let inner = &feat_str[1..];
@@ -113,7 +118,10 @@ impl SelectInput {
             }
 
             // Explicit + Implicit — cfg!() safe (arms have no .await from this context)
-            (SelectArm::Explicit { feat, body }, SelectArm::Implicit { body: imp_body }) => {
+            (
+                SelectArmArgs::Explicit { feat, body },
+                SelectArmArgs::Implicit { body: imp_body },
+            ) => {
                 let feat_str = feat.value();
                 if has_not_prefix(&feat_str) {
                     let inner = &feat_str[1..];
@@ -122,7 +130,12 @@ impl SelectInput {
                     quote! { if cfg!(feature = #feat_str) { #body } else { #imp_body } }
                 }
             }
-            (SelectArm::Implicit { body: imp_body }, SelectArm::Explicit { feat, body }) => {
+
+            // Implicit + Explicit — cfg!() safe (arms have no .await from this context)
+            (
+                SelectArmArgs::Implicit { body: imp_body },
+                SelectArmArgs::Explicit { feat, body },
+            ) => {
                 let feat_str = feat.value();
                 if has_not_prefix(&feat_str) {
                     let inner = &feat_str[1..];
@@ -133,7 +146,7 @@ impl SelectInput {
             }
 
             // Both implicit — use #[cfg] blocks to handle .await correctly
-            (SelectArm::Implicit { body: b0 }, SelectArm::Implicit { body: b1 }) => {
+            (SelectArmArgs::Implicit { body: b0 }, SelectArmArgs::Implicit { body: b1 }) => {
                 let b0_has_await = token_stream_has_await(&b0.to_token_stream());
                 let b1_has_await = token_stream_has_await(&b1.to_token_stream());
 
@@ -152,15 +165,17 @@ impl SelectInput {
             }
 
             // Not + Implicit
-            (SelectArm::Not { body: not_body }, SelectArm::Implicit { body: imp_body }) => {
+            (SelectArmArgs::Not { body: not_body }, SelectArmArgs::Implicit { body: imp_body }) => {
                 cfg_block(&quote! { #not_body }, &quote! { #imp_body })
             }
-            (SelectArm::Implicit { body: imp_body }, SelectArm::Not { body: not_body }) => {
+
+            // Implicit + Not — use #[cfg] blocks to handle .await correctly
+            (SelectArmArgs::Implicit { body: imp_body }, SelectArmArgs::Not { body: not_body }) => {
                 cfg_block(&quote! { #not_body }, &quote! { #imp_body })
             }
 
             // Two Not
-            (SelectArm::Not { body: b0 }, SelectArm::Not { body: b1 }) => {
+            (SelectArmArgs::Not { body: b0 }, SelectArmArgs::Not { body: b1 }) => {
                 quote! { if cfg!(feature = "async") { #b0 } else { #b1 } }
             }
         }
@@ -177,8 +192,6 @@ fn cfg_block(async_branch: &TokenStream2, sync_branch: &TokenStream2) -> TokenSt
         { #sync_branch }
     }}
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────────────────
 
 fn has_not_prefix(s: &str) -> bool {
     s.starts_with('!')
