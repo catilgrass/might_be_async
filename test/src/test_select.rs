@@ -1,4 +1,4 @@
-//! Tests for the `select!` macro (shared).
+// Tests for the `select!` macro (shared).
 
 #[cfg(not(feature = "async"))]
 #[test]
