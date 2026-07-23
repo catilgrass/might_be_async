@@ -1,5 +1,3 @@
-// Tests for the `select!` macro (shared).
-
 #[cfg(not(feature = "async"))]
 #[test]
 fn test_select_explicit() {
@@ -56,4 +54,32 @@ fn test_select_implicit() {
         might_be_async::select! { { 1 + 2 } else { 3 + 4 } }
     });
     assert_eq!(r, 3);
+}
+
+#[cfg(not(feature = "async"))]
+#[test]
+fn test_select_mixed_explicit_first() {
+    let r = might_be_async::select! { "async" => { 100 } else { 200 } };
+    assert_eq!(r, 200);
+}
+
+#[cfg(feature = "async")]
+#[test]
+fn test_select_mixed_explicit_first() {
+    let r = might_be_async::select! { "async" => { 100 } else { 200 } };
+    assert_eq!(r, 100);
+}
+
+#[cfg(not(feature = "async"))]
+#[test]
+fn test_select_metadata_default() {
+    let r = might_be_async::select! { { 50 } else { 60 } };
+    assert_eq!(r, 60);
+}
+
+#[cfg(not(feature = "async"))]
+#[test]
+fn test_select_metadata_two_not() {
+    let r = might_be_async::select! { ! => { 70 } else ! => { 80 } };
+    assert_eq!(r, 80);
 }
