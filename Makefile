@@ -1,6 +1,6 @@
-.PHONY: test test-crate test-sync test-async expand fmt-expand
+.PHONY: check test-crate test-sync test-async expand fmt-expand
 
-test: expand fmt-expand test-crate test-sync test-async
+check: expand fmt-expand test-crate test-sync test-async
 
 test-crate:
 	cargo test
