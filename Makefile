@@ -1,7 +1,11 @@
-.PHONY: check clippy check-lock test-crate test-sync test-async expand fmt-expand lock
+.PHONY: check clippy check-lock test-crate test-sync test-async expand fmt-expand lock doc
 
 # make check
 check: clippy expand fmt-expand test-crate test-sync test-async check-lock
+
+# make doc
+doc:
+	cargo doc --no-deps --open
 
 # make lock
 lock:
