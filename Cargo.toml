@@ -14,6 +14,9 @@ proc-macro = true
 foo_async = []
 foo_sync = []
 
+[package.metadata.might_be_async]
+default_feature_name = "foo_async"
+
 [dependencies]
 proc-macro2 = "1.0.106"
 quote = "1.0.46"

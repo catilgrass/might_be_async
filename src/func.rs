@@ -65,10 +65,10 @@ mod tests {
 
     #[test]
     fn empty_input_defaults_to_async() {
-        // Input: empty → defaults to "async"
+        // Input: empty → defaults to "foo_async"
         let input = proc_macro2::TokenStream::new();
         let args: FuncArgs = syn::parse2(input).unwrap();
-        assert_eq!(args.feature_name, "async");
+        assert_eq!(args.feature_name, "foo_async");
     }
 
     #[test]
