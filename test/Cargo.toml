@@ -1,10 +1,3 @@
-[package]
-name = "might_be_async_test"
-version = "0.1.0"
-edition = "2024"
-
-[features]
-async = []
-
-[dependencies]
-might_be_async = "../"
+[workspace]
+members = ["sync", "async"]
+resolver = "2"

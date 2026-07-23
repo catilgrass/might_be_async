@@ -1,0 +1,10 @@
+[package]
+name = "might_be_async_test_async"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+async = []
+
+[dependencies]
+might_be_async = { path = "../.." }

@@ -1,0 +1,27 @@
+//! Tests for the `#[func]` attribute macro (shared).
+
+#[might_be_async::func]
+fn identity(x: i32) -> i32 {
+    x
+}
+
+#[cfg(not(feature = "async"))]
+#[test]
+fn test_func_identity() {
+    assert_eq!(identity(42), 42);
+}
+
+#[might_be_async::func]
+fn first<T: PartialEq + Clone>(a: T, _b: T) -> T
+where
+    T: std::fmt::Debug,
+{
+    a.clone()
+}
+
+#[cfg(not(feature = "async"))]
+#[test]
+fn test_func_generic() {
+    assert_eq!(first(1, 2), 1);
+    assert_eq!(first("a", "b"), "a");
+}
