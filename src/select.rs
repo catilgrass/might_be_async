@@ -193,10 +193,20 @@ fn cfg_block(async_branch: &TokenStream2, sync_branch: &TokenStream2) -> TokenSt
     }}
 }
 
+/// Checks if the given string has the '!' (not) prefix.
+/// This is used to denote negated feature names in select! arms.
 fn has_not_prefix(s: &str) -> bool {
     s.starts_with('!')
 }
 
+/// Checks if the given token stream contains a `.await` expression.
+///
+/// This function traverses the token stream looking for the pattern `. await`,
+/// which indicates an `.await` call in Rust syntax. It is used to determine
+/// whether an implicit select arm contains async code, which influences how
+/// the generated code handles the `cfg` blocks.
+///
+/// Returns `true` if `.await` is found, `false` otherwise.
 fn token_stream_has_await(ts: &TokenStream2) -> bool {
     let mut tokens = ts.clone().into_iter();
     while let Some(token) = tokens.next() {
@@ -213,6 +223,21 @@ fn token_stream_has_await(ts: &TokenStream2) -> bool {
     false
 }
 
+/// Strips a trailing `.await` from a token stream.
+///
+/// This function is used when both arms of a `select!` macro contain `.await` expressions.
+/// In that case, one arm's `.await` must be removed so that the generated `#[cfg]` blocks
+/// produce valid code for both async and sync contexts.
+///
+/// # Examples
+///
+/// ```ignore
+/// let ts: TokenStream2 = quote! { foo.bar().await };
+/// let stripped = strip_await_from_tokens(&ts);
+/// assert_eq!(stripped.to_string(), "foo . bar ()");
+/// ```
+///
+/// If the token stream does not end with `.await`, the original stream is returned unchanged.
 fn strip_await_from_tokens(ts: &TokenStream2) -> TokenStream2 {
     let tokens: Vec<_> = ts.clone().into_iter().collect();
     let len = tokens.len();
