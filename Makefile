@@ -39,7 +39,7 @@ check-lock:
 		if [ ! -f "$$base" ]; then \
 			echo "ERROR: $$lock has no matching source file"; \
 			errors=1; \
-		elif git --no-pager diff --quiet "$$lock" "$$base" 2>/dev/null; then \
+		elif git --no-pager diff --no-index "$$lock" "$$base" 2>/dev/null; then \
 			:; \
 		else \
 			git --no-pager diff "$$lock" "$$base" || true; \
