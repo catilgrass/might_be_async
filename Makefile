@@ -32,7 +32,7 @@ fmt-expand:
 	done
 
 check-lock:
-	@errors=0; \
+	errors=0; \
 	for lock in doc/usage/*_expand.rs.lock; do \
 		[ -f "$$lock" ] || continue; \
 		base="$${lock%.lock}"; \
