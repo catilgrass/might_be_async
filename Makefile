@@ -30,5 +30,5 @@ fmt-expand:
 
 check-lock:
 	for f in doc/usage/*_expand.rs; do \
-	    cmp "$$f" "$$f.lock" || (echo "ERROR: $$f differs from $$f.lock"; exit 1); \
+	    git --no-pager diff "$$f.lock" "$$f" || (echo "ERROR: $$f differs from $$f.lock"; exit 1); \
 	done
