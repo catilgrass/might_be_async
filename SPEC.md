@@ -43,8 +43,8 @@ fn your_function(who_care: SomeFunc) -> ReturnValue {
 #[might_be_async::func]
 fn your_another_function(who_care: SomeFunc) -> ReturnValue {
     might_be_async::select!["async",
-        might_be_async::Sync => sync_func(),
-        might_be_async::Async => async_func().await
+        Sync => sync_func(),
+        Async => async_func().await
     ]
 }
 

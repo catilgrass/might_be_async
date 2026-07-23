@@ -1,7 +1,15 @@
+use proc_macro::TokenStream;
+
 mod args;
+pub(crate) mod func;
+pub(crate) mod invoke;
 
-mod func;
-pub use func::func;
+#[proc_macro_attribute]
+pub fn func(attr: TokenStream, item: TokenStream) -> TokenStream {
+    func::func(attr, item)
+}
 
-mod invoke;
-pub use invoke::invoke;
+#[proc_macro]
+pub fn invoke(input: TokenStream) -> TokenStream {
+    invoke::invoke(input)
+}

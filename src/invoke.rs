@@ -15,7 +15,6 @@ use crate::args::InvokeInput;
 /// // Explicit feature name:
 /// let result = might_be_async::invoke!("tokio_rt" => some_async_fn(args));
 /// ```
-#[proc_macro]
 pub fn invoke(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as InvokeInput);
 

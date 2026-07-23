@@ -29,7 +29,6 @@ use crate::args::FuncArgs;
 /// #[might_be_async::func("tokio_rt")]
 /// pub fn my_function() { ... }
 /// ```
-#[proc_macro_attribute]
 pub fn func(attr: TokenStream, item: TokenStream) -> TokenStream {
     let args = parse_macro_input!(attr as FuncArgs);
     let feature_name = &args.feature_name;
